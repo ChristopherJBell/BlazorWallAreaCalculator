@@ -31,10 +31,9 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);
+                await conn.ExecuteAsync(sqlCommand, parameters);                
             }
             return true;
-
         }
 
 
@@ -68,7 +67,7 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);
+                await conn.ExecuteAsync(sqlCommand, parameters);                
             }
             return true;
         }
@@ -87,7 +86,7 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);
+                await conn.ExecuteAsync(sqlCommand, parameters);                
             }
             return true;
         }

@@ -7,7 +7,7 @@
 <hr />
 
 <SfGrid DataSource="@projects" Toolbar="@Toolbaritems">
-    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="Project"></GridEvents>
+    <GridEvents OnToolbarClick="ToolbarClickHandler" TValue="Project" RowSelected="RowSelectHandler"></GridEvents>
     <GridColumns>
         <GridColumn Field="@nameof(Project.ProjectName)"
                     HeaderText="Project"
@@ -59,7 +59,9 @@
     SfDialog? DialogAddEditProject;
     Project projectAddEdit = new Project();
     string HeaderText = "";
-
+    public int SelectedProjectId { get; set; } = 0;
+    public string SelectedProjectName { get; set; } = string.Empty;
+    public string SelectedProjectUserEmail { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,7 +71,6 @@
         Toolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new Project", PrefixIcon = "e-add" });
         Toolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected Project", PrefixIcon = "e-edit" });
         Toolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected Project", PrefixIcon = "e-delete" });
-
     }
 
     public async Task ToolbarClickHandler(ClickEventArgs args)
@@ -83,17 +84,54 @@
             {
                 await DialogAddEditProject.ShowAsync();
             }
-
         }
 
         if (args.Item.Text == "Edit")
         {
             //Code for editing
+            //Check that a Project has been selected
+            if (SelectedProjectId == 0)
+            {
+                await DialogService.AlertAsync("Please select a project.", "No Project Selected");
+                return;
+            }
+            else
+            {
+                //populate projectAddEdit (temporary data set used for the editing process)
+                projectAddEdit.ProjectID = SelectedProjectId;
+                projectAddEdit.ProjectName = SelectedProjectName;
+                projectAddEdit.UserEmail = SelectedProjectUserEmail;
+
+                HeaderText = "Edit Project";
+                if (DialogAddEditProject is not null)
+                {
+                    await DialogAddEditProject.ShowAsync();
+                }
+            }
         }
 
         if (args.Item.Text == "Delete")
         {
             //Code for deleting
+            if (SelectedProjectId == 0)
+            {
+                await DialogService.AlertAsync("Please select a project.", "No Project Selected");
+                return;
+            }
+            else
+            {
+                bool isConfirm = await DialogService.ConfirmAsync(
+                    "Are you sure you want to delete " + SelectedProjectName + " project?",
+                    "Delete " + SelectedProjectName);
+                if (isConfirm == true)
+                {
+                    await ProjectService.ProjectDelete(SelectedProjectId);
+                    //Refresh datagrid
+                    projects = await ProjectService.ProjectReadAll();
+                    StateHasChanged();
+                    SelectedProjectId = 0;
+                }
+            }
         }
     }
 
@@ -102,14 +140,15 @@
         if (projectAddEdit.ProjectID == 0)
         {
             // Record is being added
-            if (await ProjectService.ProjectCreate(projectAddEdit))
+            try
             {
+                await ProjectService.ProjectCreate(projectAddEdit);
                 //Refresh datagrid
                 projects = await ProjectService.ProjectReadAll();
                 StateHasChanged();
                 await CloseDialog();
             }
-            else
+            catch
             {
                 // Display warning message
                 await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
@@ -120,14 +159,15 @@
         else
         {
             // Record is being edited
-            if (await ProjectService.ProjectUpdate(projectAddEdit))
+            try
             {
+                await ProjectService.ProjectUpdate(projectAddEdit);
                 //Refresh datagrid
                 projects = await ProjectService.ProjectReadAll();
                 StateHasChanged();
                 await CloseDialog();
             }
-            else
+            catch
             {
                 // Display warning message
                 await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
@@ -145,5 +185,11 @@
         StateHasChanged();
     }
 
-
+    public void RowSelectHandler(RowSelectEventArgs<Project> args)
+    {
+        //{args.Data} returns all the data for the current selected record.
+        SelectedProjectId = args.Data.ProjectID;
+        SelectedProjectName = args.Data.ProjectName;
+        SelectedProjectUserEmail = args.Data.UserEmail;
+    }
 }
