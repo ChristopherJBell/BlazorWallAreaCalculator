@@ -51,6 +51,38 @@ namespace BlazorWallAreaCalculator.Data
             return projects;
         }
 
+        public async Task<int> CountProjectsByName(string ProjectName)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@ProjectName", ProjectName, DbType.String);
+
+            sqlCommand = "Select Count(*) from Project ";
+            sqlCommand += "where Upper(ProjectName) = Upper(@ProjectName)";
+
+            using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
+            {
+                var countProject = await conn.QueryFirstOrDefaultAsync<int>(sqlCommand, parameters);
+                return countProject;
+            }
+        }
+
+        public async Task<int> CountProjectsByNameAndId(string ProjectName, int ProjectID)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@ProjectName", ProjectName, DbType.String);
+            parameters.Add("@ProjectID", ProjectID, DbType.Int32);
+
+            sqlCommand = "Select Count(*) from Project ";
+            sqlCommand += "where Upper(ProjectName) = Upper(@ProjectName) ";
+            sqlCommand += "and ProjectID <> @ProjectID";
+
+            using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
+            {
+                var countProject = await conn.QueryFirstOrDefaultAsync<int>(sqlCommand, parameters);
+                return countProject;
+            }
+        }
+
 
         //ProjectUpdate
         public async Task<bool> ProjectUpdate(Project project)

@@ -140,37 +140,58 @@
         if (projectAddEdit.ProjectID == 0)
         {
             // Record is being added
-            try
+            // Check for duplicates
+            int duplicates = await ProjectService.CountProjectsByName(projectAddEdit.ProjectName);
+
+            if (duplicates == 0)
+                try
+                {
+                    await ProjectService.ProjectCreate(projectAddEdit);
+                    //Refresh datagrid
+                    projects = await ProjectService.ProjectReadAll();
+                    StateHasChanged();
+                    await CloseDialog();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
+            else
             {
-                await ProjectService.ProjectCreate(projectAddEdit);
-                //Refresh datagrid
-                projects = await ProjectService.ProjectReadAll();
-                StateHasChanged();
-                await CloseDialog();
-            }
-            catch
-            {
-                // Display warning message
-                await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                //Project already exists - warn the user
+                await DialogService.AlertAsync("This project already exists", "Project Already Exists");
                 return;
             }
-
         }
         else
         {
             // Record is being edited
-            try
+            // Check for duplicates
+            int duplicates = await ProjectService.CountProjectsByNameAndId(projectAddEdit.ProjectName, projectAddEdit.ProjectID);
+
+            if (duplicates == 0)
             {
-                await ProjectService.ProjectUpdate(projectAddEdit);
-                //Refresh datagrid
-                projects = await ProjectService.ProjectReadAll();
-                StateHasChanged();
-                await CloseDialog();
+                try
+                {
+                    await ProjectService.ProjectUpdate(projectAddEdit);
+                    //Refresh datagrid
+                    projects = await ProjectService.ProjectReadAll();
+                    StateHasChanged();
+                    await CloseDialog();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
             }
-            catch
+            else
             {
-                // Display warning message
-                await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                //Project already exists - warn the user
+                await DialogService.AlertAsync("This project already exists", "Project Already Exists");
                 return;
             }
         }
