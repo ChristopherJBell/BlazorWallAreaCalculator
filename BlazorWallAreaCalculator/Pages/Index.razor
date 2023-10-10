@@ -1,9 +1,248 @@
 ﻿@page "/"
+@using BlazorWallAreaCalculator.Data
+@inject IProjectService ProjectService
+@inject IRoomService RoomService
+@inject SfDialogService DialogService
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Wall Area Calculator</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="control_wrapper">
+    <SfDropDownList TItem="Project"
+                    TValue="string"
+                    DataSource="@projects"
+                    Placeholder="Select a Project"
+                    PopupHeight="200px"
+                    PopupWidth="250px">
+        <DropDownListFieldSettings Text="ProjectName" Value="ProjectID"></DropDownListFieldSettings>
+        <DropDownListEvents TItem="Project" TValue="string" ValueChange="@OnChangeProject"></DropDownListEvents>
+    </SfDropDownList>
+</div>
+<hr />
 
-Welcome to your new app.
+<h6><b>Rooms</b></h6>
 
+<SfGrid @ref="RoomGrid"
+        DataSource="@rooms"
+        AllowSorting="true"
+        AllowResizing="true"
+        Height="70"
+        Toolbar="@RoomToolbaritems">
+    <GridColumns>
+        <GridColumn Field="@nameof(Room.RoomName)"
+                    HeaderText="Room Name"
+                    TextAlign="@TextAlign.Left"
+                    Width="50">
+        </GridColumn>
+    </GridColumns>
+    <GridEvents OnToolbarClick="RoomToolbarClickHandler" TValue="Room" RowSelected="RoomRowSelectHandler"></GridEvents>
+</SfGrid>
 
+<hr />
+
+<SfDialog @ref="DialogRoom" IsModal="true" Width="420px" ShowCloseIcon="false" Visible="false" AllowDragging="true">
+    <DialogTemplates>
+        <Header> @dialogTitle</Header>
+        <Content>
+            <EditForm Model="@roomAddEdit" OnValidSubmit="@RoomSave">
+                <div>
+                    <SfTextBox Enabled="true" Placeholder="Room Name"
+                               FloatLabelType="@FloatLabelType.Always"
+                    @bind-Value="roomAddEdit.RoomName">
+                    </SfTextBox>
+                </div>
+                <br /><br />
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                        <button type="button" class="e-btn e-normal" @onclick="@CancelRoom">Cancel</button>
+                    </div>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<style>
+    .control_wrapper {
+        width: 250px;
+    }
+</style>
+
+@code{
+    public IEnumerable<Project>? projects;
+    public IEnumerable<Room>? rooms;
+
+    [Parameter]
+    public int SelectedProjectID { get; set; } = 0;
+    public int SelectedRoomID { get; set; } = 0;
+
+    SfGrid<Room>? RoomGrid;
+
+    SfDialog? DialogRoom;
+    Room roomAddEdit = new Room();
+
+    public string dialogTitle = "";
+    public string SelectedRoomName { get; set; } = string.Empty;
+
+    private List<ItemModel> RoomToolbaritems = new List<ItemModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //Populate the list of projects objects from the Project table.
+        projects = await ProjectService.ProjectReadAll();
+
+        RoomToolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new room", PrefixIcon = "e-add" });
+        RoomToolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected room", PrefixIcon = "e-edit" });
+        RoomToolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected room", PrefixIcon = "e-delete" });
+    }
+
+    public async Task RoomToolbarClickHandler(ClickEventArgs args)
+    {
+        if (args.Item.Text == "Add")
+        {
+            //Code for adding goes here
+            //Check that a Project has been selected:
+            if(SelectedProjectID == 0)
+            {
+                await DialogService.AlertAsync("Please select a project.", "No Project Selected");
+                return;
+            }
+
+            dialogTitle = "Add a Room";
+            roomAddEdit = new();
+            await DialogRoom.ShowAsync(false);
+
+        }
+        if (args.Item.Text == "Edit")
+        {
+            //Code for editing
+            dialogTitle = "Edit a Room";
+
+            //Check that a Room has been selected
+            if (SelectedRoomID == 0)
+            {
+                await DialogService.AlertAsync("Please select a room.", "No Room Selected");
+                return;
+            }
+            else
+            {
+                //populate roomAddEdit (temporary data set used for the editing process)
+                roomAddEdit = new();
+                roomAddEdit.RoomID = SelectedRoomID;
+                roomAddEdit.RoomName = SelectedRoomName;
+                await DialogRoom.ShowAsync(false);
+            }
+
+        }
+        if (args.Item.Text == "Delete")
+        {
+            //Code for deleting
+            if (SelectedRoomID == 0)
+            {
+                await DialogService.AlertAsync("Please select a room.", "No Room Selected");
+                return;
+            }
+            else
+            {
+                bool isConfirm = await DialogService.ConfirmAsync(
+                    "Are you sure you want to delete " + SelectedRoomName + "?",
+                    "Delete " + SelectedRoomName);
+                if (isConfirm == true)
+                {
+                    await RoomService.RoomDelete(SelectedRoomID);
+                    //Refresh datagrid
+                    rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+                    StateHasChanged();
+                    SelectedRoomID = 0;
+                }
+            }
+        }
+    }
+
+    public async Task RoomRowSelectHandler(RowSelectEventArgs<Room> args)
+    {
+        //{args.Data} returns the current selected records.
+        SelectedRoomID = args.Data.RoomID;
+        SelectedRoomName = args.Data.RoomName;
+    }
+
+    public async Task OnChangeProject(ChangeEventArgs<string, Project> args)
+    {
+        SelectedProjectID = args.ItemData.ProjectID;        
+        rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+        SelectedRoomID = 0;
+    }
+
+    protected async Task RoomSave()
+    {
+        if (roomAddEdit.RoomID == 0)
+        {
+            // Insert if RoomID is zero.
+            //Check for duplicates
+            int duplicates = await RoomService.CountRoomsByNameAndProject(roomAddEdit.RoomName, SelectedProjectID);
+
+            if (duplicates == 0)
+            {
+                roomAddEdit.ProjectID = SelectedProjectID;
+
+                try
+                {
+                    await RoomService.RoomCreate(roomAddEdit);
+                    //Refresh datagrid
+                    rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+                    StateHasChanged();
+                    await DialogRoom.HideAsync();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
+            }
+            else
+            {
+                //Room already exists - warn the user
+                await DialogService.AlertAsync("This Room already exists; it cannot be added again.", "Warning!");
+                return;
+            }
+        }
+        else
+        {
+            // Record is being edited
+            // Check for duplicates
+            int duplicates = await RoomService.CountRoomsByNameAndProjectAndId(roomAddEdit.RoomName, roomAddEdit.RoomID, SelectedProjectID);
+
+            if (duplicates == 0)
+            {
+                try
+                {
+                    await RoomService.RoomUpdate(roomAddEdit);
+                    //Refresh datagrid
+                    rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+                    StateHasChanged();
+                    await DialogRoom.HideAsync();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
+            }
+            else
+            {
+                //Project already exists - warn the user
+                await DialogService.AlertAsync("This room already exists", "Room already Exists");
+                return;
+            }
+
+        }
+    }
+
+    void CancelRoom()
+    {
+        DialogRoom.HideAsync();
+    }
+
+}

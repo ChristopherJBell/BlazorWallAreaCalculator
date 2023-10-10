@@ -11,6 +11,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IWallService, WallService>();
+builder.Services.AddScoped<IDeductionService, DeductionService>();
 builder.Services.AddScoped<SfDialogService>();
 
 var app = builder.Build();
