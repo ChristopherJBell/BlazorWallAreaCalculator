@@ -369,3 +369,4 @@ wwwroot/appsettings.json
 wwwroot/appsettings.Development.json
 appsettings.json
 appsettings.Development.json
+data/WallAreaCalc.db
