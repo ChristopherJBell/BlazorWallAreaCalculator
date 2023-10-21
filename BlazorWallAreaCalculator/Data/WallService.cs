@@ -25,7 +25,7 @@ namespace BlazorWallAreaCalculator.Data
             parameters.Add("@RoomID", wall.RoomID, DbType.Int32);
             parameters.Add("@WallName", wall.WallName, DbType.String);
             parameters.Add("@WallTypeID", wall.WallTypeID, DbType.Int32);
-            parameters.Add("@WalTypeName", wall.WallTypeName, DbType.String);
+            parameters.Add("@WallTypeName", wall.WallTypeName, DbType.String);
             parameters.Add("@WallLengthMax", wall.WallLengthMax, DbType.Int32);
             parameters.Add("@WallLengthMin", wall.WallLengthMin, DbType.Int32);
             parameters.Add("@WallHeightMax", wall.WallHeightMax, DbType.Int32);
@@ -39,33 +39,40 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
 
 
         // WallRead
-        public async Task<IEnumerable<Wall>> WallReadAll()
+        public async Task<IEnumerable<Wall>> WallsReadByRoom(int RoomID)
         {
             IEnumerable<Wall> walls;
+            var parameters = new DynamicParameters();
+            parameters.Add("RoomID", RoomID, DbType.Int32);
 
-            sqlCommand = "Select * from Wall ORDER BY WallName";
+            sqlCommand = "Select * from Wall ";
+            sqlCommand += "WHERE RoomID  = @RoomID";
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                walls = await conn.QueryAsync<Wall>(sqlCommand);
+                walls = await conn.QueryAsync<Wall>(sqlCommand, parameters);
             }
             return walls;
         }
 
-        public async Task<int> CountWallsByName(string WallName)
+
+        #region CountWalls
+        public async Task<int> CountWallsByNameAndRoom(string WallName, int RoomID)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@WallName", WallName, DbType.String);
+            parameters.Add("@RoomID", RoomID, DbType.Int32);
 
             sqlCommand = "Select Count(*) from Wall ";
-            sqlCommand += "where Upper(WallName) = Upper(@WallName)";
+            sqlCommand += "where Upper(WallName) = Upper(@WallName) ";
+            sqlCommand += "and RoomID = @RoomID";
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
@@ -74,14 +81,15 @@ namespace BlazorWallAreaCalculator.Data
             }
         }
 
-        public async Task<int> CountWallsByNameAndId(string WallName, int WallID)
+        public async Task<int> CountWallsByNameAndRoomAndId(string WallName, int WallID, int RoomID)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@WallName", WallName, DbType.String);
             parameters.Add("@WallID", WallID, DbType.Int32);
-
+            parameters.Add("@RoomID", RoomID, DbType.Int32);
             sqlCommand = "Select Count(*) from Wall ";
             sqlCommand += "where Upper(WallName) = Upper(@WallName) ";
+            sqlCommand += "and RoomID = @RoomID ";
             sqlCommand += "and WallID <> @WallID";
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
@@ -90,6 +98,8 @@ namespace BlazorWallAreaCalculator.Data
                 return countWall;
             }
         }
+        #endregion
+
 
 
         //WallUpdate
@@ -97,10 +107,10 @@ namespace BlazorWallAreaCalculator.Data
         {
             var parameters = new DynamicParameters();
 
-            parameters.Add("WallID", wall.WallID, DbType.Int32);
-            parameters.Add("WallName", wall.WallName, DbType.String);
+            parameters.Add("@WallID", wall.WallID, DbType.Int32);
+            parameters.Add("@WallName", wall.WallName, DbType.String);
             parameters.Add("@WallTypeID", wall.WallTypeID, DbType.Int32);
-            parameters.Add("@WalTypeName", wall.WallTypeName, DbType.String);
+            parameters.Add("@WallTypeName", wall.WallTypeName, DbType.String);
             parameters.Add("@WallLengthMax", wall.WallLengthMax, DbType.Int32);
             parameters.Add("@WallLengthMin", wall.WallLengthMin, DbType.Int32);
             parameters.Add("@WallHeightMax", wall.WallHeightMax, DbType.Int32);
@@ -110,7 +120,7 @@ namespace BlazorWallAreaCalculator.Data
             sqlCommand = "Update Wall ";
             sqlCommand += "SET WallName = @WallName, " +
                 "WallTypeID = @WallTypeID, " +
-                "WalTypeName = @WalTypeName, " +
+                "WallTypeName = @WallTypeName, " +
                 "WallLengthMax = @WallLengthMax, " +
                 "WallLengthMin = @WallLengthMin, " +
                 "WallHeightMax = @WallHeightMax, " +
@@ -120,10 +130,11 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
+
 
 
         //WallDelete

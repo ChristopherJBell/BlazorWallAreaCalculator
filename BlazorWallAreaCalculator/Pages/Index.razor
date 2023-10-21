@@ -2,6 +2,7 @@
 @using BlazorWallAreaCalculator.Data
 @inject IProjectService ProjectService
 @inject IRoomService RoomService
+@inject IWallService WallService
 @inject SfDialogService DialogService
 
 <PageTitle>Wall Area Calculator</PageTitle>
@@ -38,6 +39,48 @@
 </SfGrid>
 
 <hr />
+<h6><b>Walls</b></h6>
+
+<SfGrid @ref="WallGrid"
+        DataSource="@walls"
+        AllowSorting="true"
+        AllowResizing="true"
+        Height="70"
+        Toolbar="@WallToolbaritems">
+    <GridColumns>
+        <GridColumn Field="@nameof(Wall.WallName)"
+                    HeaderText="Wall Name"
+                    TextAlign="@TextAlign.Left"
+                    Width="50">
+        </GridColumn>
+        <GridColumn Field="@nameof(Wall.WallSqM)"
+                    HeaderText="Area"
+                    Format="n3"
+                    TextAlign="@TextAlign.Right"
+                    Width="50">
+        </GridColumn>
+    </GridColumns>
+    <GridAggregates>
+        <GridAggregate>
+            <GridAggregateColumns>
+                <GridAggregateColumn Field=@nameof(Wall.WallSqM) Type="AggregateType.Sum" Format="n3">
+                    <FooterTemplate>
+                        @{
+                            var aggregate = (context as AggregateTemplateContext);
+                            <div>
+                                <p>Total Net Area (SqM):   @aggregate.Sum</p>
+                            </div>
+                        }
+                    </FooterTemplate>
+                </GridAggregateColumn>
+            </GridAggregateColumns>
+        </GridAggregate>
+    </GridAggregates>
+
+    <GridEvents OnToolbarClick="WallToolbarClickHandler" TValue="Wall" RowSelected="WallRowSelectHandler"></GridEvents>
+</SfGrid>
+
+<hr />
 
 <SfDialog @ref="DialogRoom" IsModal="true" Width="420px" ShowCloseIcon="false" Visible="false" AllowDragging="true">
     <DialogTemplates>
@@ -62,29 +105,80 @@
     </DialogTemplates>
 </SfDialog>
 
+<SfDialog @ref="DialogWall" IsModal="true" Width="420px" ShowCloseIcon="false" Visible="false" AllowDragging="true">
+    <DialogTemplates>
+        <Header> @dialogTitle</Header>
+        <Content>
+            <EditForm Model="@wallAddEdit" OnValidSubmit="@WallSave">
+                <div>
+                    <SfTextBox Enabled="true" Placeholder="Wall Name"
+                               FloatLabelType="@FloatLabelType.Always"
+                    @bind-Value="wallAddEdit.WallName">
+                    </SfTextBox>
+
+                    <div>
+                        <br />
+                    </div>
+
+                    <SfNumericTextBox Enabled="true"
+                                      Placeholder="Wall Area (SqM)"
+                                      Format="n2"
+                                      FloatLabelType="@FloatLabelType.Always"
+                    @bind-Value="wallAddEdit.WallSqM"
+                                      ShowSpinButton=false
+                                      CssClass="e-style">
+                    </SfNumericTextBox>
+                </div>
+                <br /><br />
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                        <button type="button" class="e-btn e-normal" @onclick="@CancelWall">Cancel</button>
+                    </div>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
 <style>
     .control_wrapper {
         width: 250px;
+    }
+
+    .e-numeric.e-style .e-control.e-numerictextbox {
+        text-align: right;
+        padding: 0px 5px 0px 0px;
     }
 </style>
 
 @code{
     public IEnumerable<Project>? projects;
     public IEnumerable<Room>? rooms;
+    public IEnumerable<Wall>? walls;
 
     [Parameter]
     public int SelectedProjectID { get; set; } = 0;
     public int SelectedRoomID { get; set; } = 0;
 
+    public int SelectedWallID { get; set; } = 0;
+    public string SelectedWallName { get; set; } = string.Empty;
+    public decimal SelectedWallSqM { get; set; } = decimal.Zero;
+
     SfGrid<Room>? RoomGrid;
+    SfGrid<Wall>? WallGrid;
 
     SfDialog? DialogRoom;
     Room roomAddEdit = new Room();
+
+    SfDialog? DialogWall;
+    Wall wallAddEdit = new Wall();
 
     public string dialogTitle = "";
     public string SelectedRoomName { get; set; } = string.Empty;
 
     private List<ItemModel> RoomToolbaritems = new List<ItemModel>();
+    private List<ItemModel> WallToolbaritems = new List<ItemModel>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,6 +188,10 @@
         RoomToolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new room", PrefixIcon = "e-add" });
         RoomToolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected room", PrefixIcon = "e-edit" });
         RoomToolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected room", PrefixIcon = "e-delete" });
+
+        WallToolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new wall", PrefixIcon = "e-add" });
+        WallToolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected wall", PrefixIcon = "e-edit" });
+        WallToolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected wall", PrefixIcon = "e-delete" });
     }
 
     public async Task RoomToolbarClickHandler(ClickEventArgs args)
@@ -152,6 +250,8 @@
                     await RoomService.RoomDelete(SelectedRoomID);
                     //Refresh datagrid
                     rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+                    walls = Enumerable.Empty<Wall>();
+                    SelectedRoomID = 0;
                     StateHasChanged();
                     SelectedRoomID = 0;
                 }
@@ -164,6 +264,7 @@
         //{args.Data} returns the current selected records.
         SelectedRoomID = args.Data.RoomID;
         SelectedRoomName = args.Data.RoomName;
+        walls = await WallService.WallsReadByRoom(SelectedRoomID);
     }
 
     public async Task OnChangeProject(ChangeEventArgs<string, Project> args)
@@ -171,6 +272,7 @@
         SelectedProjectID = args.ItemData.ProjectID;        
         rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
         SelectedRoomID = 0;
+        walls = Enumerable.Empty<Wall>();
     }
 
     protected async Task RoomSave()
@@ -190,6 +292,8 @@
                     await RoomService.RoomCreate(roomAddEdit);
                     //Refresh datagrid
                     rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
+                    walls = Enumerable.Empty<Wall>();
+                    SelectedRoomID = 0;
                     StateHasChanged();
                     await DialogRoom.HideAsync();
                 }
@@ -244,5 +348,159 @@
     {
         DialogRoom.HideAsync();
     }
+
+    #region Walls
+    public async Task WallToolbarClickHandler(ClickEventArgs args)
+    {
+        //Check that a room has been selected
+        if (SelectedRoomID == 0)
+        {
+            await DialogService.AlertAsync("Please select a room.", "No Room Selected");
+            return;
+        }
+        if (args.Item.Text == "Add")
+        {
+            //Code for adding goes here
+            dialogTitle = "Add a Wall";
+            wallAddEdit = new();
+            await DialogWall.ShowAsync(false);
+        }
+        if (args.Item.Text == "Edit")
+        {
+            //Code for editing
+            dialogTitle = "Edit a Wall";
+
+            //Check that a wall has been selected
+            if (SelectedWallID == 0)
+            {
+                await DialogService.AlertAsync("Please select a wall.", "No Wall Selected");
+                return;
+            }
+            else
+            {
+                //populate wallAddEdit (temporary data set used for the editing process)
+                wallAddEdit.WallID = SelectedWallID;
+                wallAddEdit.RoomID = SelectedRoomID;
+                wallAddEdit.WallName = SelectedWallName;
+                wallAddEdit.WallSqM = SelectedWallSqM;
+                await DialogWall.ShowAsync(false);
+                StateHasChanged();
+            }
+
+        }
+        if (args.Item.Text == "Delete")
+        {
+            //Code for deleting
+            if (SelectedWallID == 0)
+            {
+                await DialogService.AlertAsync("Please select a wall.", "No Wall Selected");
+                return;
+            }
+            else
+            {
+                bool isConfirm = await DialogService.ConfirmAsync(
+                    "Are you sure you want to delete " + SelectedWallName + "?",
+                    "Delete " + SelectedWallName);
+                if (isConfirm == true)
+                {
+                    await WallService.WallDelete(SelectedWallID);
+                    //Refresh datagrid
+                    walls = await WallService.WallsReadByRoom(SelectedRoomID);
+                    StateHasChanged();
+                    SelectedWallID = 0;
+                }
+            }
+
+        }
+    }
+
+    public async Task WallRowSelectHandler(RowSelectEventArgs<Wall> args)  //Note <Wall>
+    {
+        //{args.Data} returns the current selected records.
+        SelectedWallID = args.Data.WallID;
+        SelectedWallName = args.Data.WallName;
+        SelectedWallSqM = args.Data.WallSqM;
+
+    }
+
+    protected async Task WallSave()
+    {
+        if (wallAddEdit.WallID == 0)    //It's an insert
+        {
+            //Check for duplicates
+            int duplicates = await WallService.CountWallsByNameAndRoom(wallAddEdit.WallName, SelectedRoomID);
+
+            if (duplicates == 0)
+            {
+                wallAddEdit.RoomID = SelectedRoomID;
+
+                // Temporarily assign values to these:
+                wallAddEdit.WallTypeID = 0;
+                wallAddEdit.WallTypeName = "";
+                wallAddEdit.WallLengthMax = 0;
+                wallAddEdit.WallLengthMin = 0;
+                wallAddEdit.WallHeightMax = 0;
+                wallAddEdit.WallHeightMin = 0;
+
+                try
+                {
+                    await WallService.WallCreate(wallAddEdit);
+                    //Refresh datagrid
+                    walls = await WallService.WallsReadByRoom(SelectedRoomID);
+                    StateHasChanged();
+                    await DialogWall.HideAsync();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
+            }
+            else
+            {
+                //Room already exists - warn the user
+                await DialogService.AlertAsync("This wall already exists for this room; it cannot be added again.", "Warning!");
+                return;
+            }
+        }
+        else                            //It's an edit
+        {
+            //It's an edit
+            // Check for duplicates
+            int duplicates = await WallService.CountWallsByNameAndRoomAndId(wallAddEdit.WallName, wallAddEdit.WallID, SelectedRoomID);
+
+            if (duplicates == 0)
+            {
+                try
+                {
+                    await WallService.WallUpdate(wallAddEdit);
+                    //Refresh datagrid
+                    walls = await WallService.WallsReadByRoom(SelectedRoomID);
+                    StateHasChanged();
+                    await DialogWall.HideAsync();
+                }
+                catch
+                {
+                    // Display warning message
+                    await DialogService.AlertAsync("An unexpected error has occured.", "Unknown Error");
+                    return;
+                }
+            }
+            else
+            {
+                //Wall already exists - warn the user
+                await DialogService.AlertAsync("This wall already exists for this room", "Wall Already Exists");
+                return;
+            }
+        }
+    }
+
+    void CancelWall()
+    {
+        DialogWall.HideAsync();
+    }
+
+    #endregion
 
 }
