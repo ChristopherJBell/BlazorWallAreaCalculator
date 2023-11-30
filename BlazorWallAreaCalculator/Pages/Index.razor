@@ -115,20 +115,174 @@
                                FloatLabelType="@FloatLabelType.Always"
                     @bind-Value="wallAddEdit.WallName">
                     </SfTextBox>
+                    <hr />
+                    @if (IsAdd)
+                    {
+                        <SfDropDownList TItem="WallType"
+                                        TValue="string"
+                                        FloatLabelType="@FloatLabelType.Always"
+                                        DataSource="@LocalData"
+                                        Placeholder="Select a Wall Type"
+                                        PopupHeight="200px"
+                                        PopupWidth="250px">
+                            <DropDownListFieldSettings Text="WallTypeName" Value="WallTypeID"></DropDownListFieldSettings>
+                            <DropDownListEvents TItem="WallType" TValue="string" ValueChange="@OnChangeWallType"></DropDownListEvents>
+                        </SfDropDownList>
+                    }
+                    else
+                    {
+                        <SfTextBox Enabled="false" Placeholder="Wall Type"
+                                   FloatLabelType="@FloatLabelType.Always"
+                        @bind-Value="wallAddEdit.WallTypeName">
+                        </SfTextBox>
+                    }
 
-                    <div>
-                        <br />
-                    </div>
+                    @switch (wallAddEdit.WallTypeName)
+                    {
+                        case "Simple":
+                            <div>
+                                <br />
+                                <img src=".\\media\\simple.jpg" />
+                                <br />
+                            </div>
 
-                    <SfNumericTextBox Enabled="true"
-                                      Placeholder="Wall Area (SqM)"
-                                      Format="n2"
-                                      FloatLabelType="@FloatLabelType.Always"
-                    @bind-Value="wallAddEdit.WallSqM"
-                                      ShowSpinButton=false
-                                      CssClass="e-style">
-                    </SfNumericTextBox>
+                            <div class="grid-container">
+
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                    @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                    @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                            </div>
+
+                            break;
+
+                        case "Complex - Left":
+                            <div>
+                                <br />
+                                <img src=".\\media\\complex-left.jpg" />
+                                <br />
+                            </div>
+                            <div class="grid-container">
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+                            </div>
+                            break;
+
+                        case "Complex - Right":
+                            <div>
+                                <br />
+                                <img src=".\\media\\complex-right.jpg" />
+                                <br />
+                            </div>
+                            <div class="grid-container">
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+                            </div>
+                            break;
+                    }
+
                 </div>
+
                 <br /><br />
                 <div class="e-footer-content">
                     <div class="button-container">
@@ -150,6 +304,14 @@
         text-align: right;
         padding: 0px 5px 0px 0px;
     }
+
+    .grid-container {
+        display: grid;
+        max-width: 400px;               /* Maximum width of the whole container - in this case both columns */
+        grid-template-columns: 1fr 1fr; /* Relative width of each column (1fr 1fr is equivalent to, say, 33fr 33fr */
+        grid-gap: 100px;                /* size of the gap between columns */
+
+    }
 </style>
 
 @code{
@@ -162,8 +324,21 @@
     public int SelectedRoomID { get; set; } = 0;
 
     public int SelectedWallID { get; set; } = 0;
+    public string SelectedWallTypeName { get; set; } = string.Empty;
     public string SelectedWallName { get; set; } = string.Empty;
     public decimal SelectedWallSqM { get; set; } = decimal.Zero;
+
+    public int SelectedWallLengthMax { get; set; } = 0;
+    public int SelectedWallLengthMin { get; set; } = 0;
+    public int SelectedWallHeightMax { get; set; } = 0;
+    public int SelectedWallHeightMin { get; set; } = 0;
+
+    public decimal decWallSqM = decimal.Zero;
+    public decimal decWallLengthMax = decimal.Zero;
+    public decimal decWallLengthMin = decimal.Zero;
+    public decimal decWallHeightMax = decimal.Zero;
+    public decimal decWallHeightMin = decimal.Zero;
+
 
     SfGrid<Room>? RoomGrid;
     SfGrid<Wall>? WallGrid;
@@ -179,6 +354,22 @@
 
     private List<ItemModel> RoomToolbaritems = new List<ItemModel>();
     private List<ItemModel> WallToolbaritems = new List<ItemModel>();
+
+    public class WallType
+    {
+        public int WallTypeID { get; set; } = 0;
+        public string WallTypeName { get; set; } = string.Empty;
+    }
+
+    List<WallType> LocalData = new List<WallType>
+    {
+        new WallType() {WallTypeID =1, WallTypeName= "Simple" },
+        new WallType() {WallTypeID =2, WallTypeName= "Complex - Left" },
+        new WallType() {WallTypeID =3, WallTypeName= "Complex - Right" },
+    };
+
+    public bool IsAdd { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -350,6 +541,12 @@
     }
 
     #region Walls
+    public void OnChangeWallType(ChangeEventArgs<string, WallType> args)
+    {
+        wallAddEdit.WallTypeID = args.ItemData.WallTypeID;
+        wallAddEdit.WallTypeName = args.ItemData.WallTypeName;
+    }
+
     public async Task WallToolbarClickHandler(ClickEventArgs args)
     {
         //Check that a room has been selected
@@ -361,6 +558,9 @@
         if (args.Item.Text == "Add")
         {
             //Code for adding goes here
+            IsAdd = true;
+            SelectedWallID = 0;
+            SelectedWallTypeName = string.Empty;
             dialogTitle = "Add a Wall";
             wallAddEdit = new();
             await DialogWall.ShowAsync(false);
@@ -369,6 +569,7 @@
         {
             //Code for editing
             dialogTitle = "Edit a Wall";
+            IsAdd = false;
 
             //Check that a wall has been selected
             if (SelectedWallID == 0)
@@ -382,7 +583,12 @@
                 wallAddEdit.WallID = SelectedWallID;
                 wallAddEdit.RoomID = SelectedRoomID;
                 wallAddEdit.WallName = SelectedWallName;
-                wallAddEdit.WallSqM = SelectedWallSqM;
+                // wallAddEdit.WallSqM = SelectedWallSqM;
+                wallAddEdit.WallLengthMax = SelectedWallLengthMax;
+                wallAddEdit.WallLengthMin = SelectedWallLengthMin;
+                wallAddEdit.WallHeightMax = SelectedWallHeightMax;
+                wallAddEdit.WallHeightMin = SelectedWallHeightMin;
+
                 await DialogWall.ShowAsync(false);
                 StateHasChanged();
             }
@@ -419,12 +625,18 @@
         //{args.Data} returns the current selected records.
         SelectedWallID = args.Data.WallID;
         SelectedWallName = args.Data.WallName;
-        SelectedWallSqM = args.Data.WallSqM;
-
+        // SelectedWallSqM = args.Data.WallSqM;
+        SelectedWallLengthMax = args.Data.WallLengthMax;
+        SelectedWallLengthMin = args.Data.WallLengthMin;
+        SelectedWallHeightMax = args.Data.WallHeightMax;
+        SelectedWallHeightMin = args.Data.WallHeightMin;
     }
 
     protected async Task WallSave()
     {
+        //Always do area calculation
+        await CalculateArea(wallAddEdit);
+
         if (wallAddEdit.WallID == 0)    //It's an insert
         {
             //Check for duplicates
@@ -435,12 +647,12 @@
                 wallAddEdit.RoomID = SelectedRoomID;
 
                 // Temporarily assign values to these:
-                wallAddEdit.WallTypeID = 0;
-                wallAddEdit.WallTypeName = "";
-                wallAddEdit.WallLengthMax = 0;
-                wallAddEdit.WallLengthMin = 0;
-                wallAddEdit.WallHeightMax = 0;
-                wallAddEdit.WallHeightMin = 0;
+                // wallAddEdit.WallTypeID = 0;
+                // wallAddEdit.WallTypeName = "";
+                // wallAddEdit.WallLengthMax = 0;
+                // wallAddEdit.WallLengthMin = 0;
+                // wallAddEdit.WallHeightMax = 0;
+                // wallAddEdit.WallHeightMin = 0;
 
                 try
                 {
@@ -500,7 +712,43 @@
     {
         DialogWall.HideAsync();
     }
+    #endregion
 
+
+
+    #region Area Calculation
+    public async Task CalculateArea(Wall wallAddEdit)
+    {
+        switch (wallAddEdit.WallTypeName)
+        {
+            case "Simple":
+
+                decWallLengthMax = Convert.ToDecimal(wallAddEdit.WallLengthMax);
+                decWallHeightMax = Convert.ToDecimal(wallAddEdit.WallHeightMax);              
+
+                decimal area = decimal.Round((decWallLengthMax * decWallHeightMax)/1000000, 3, MidpointRounding.AwayFromZero);                
+
+                wallAddEdit.WallSqM = area;
+
+                break;
+
+            case "Complex - Left":
+            case "Complex - Right":
+
+                decWallLengthMax = Convert.ToDecimal(wallAddEdit.WallLengthMax);
+                decWallHeightMax = Convert.ToDecimal(wallAddEdit.WallHeightMax);
+                decWallLengthMin = Convert.ToDecimal(wallAddEdit.WallLengthMin);
+                decWallHeightMin = Convert.ToDecimal(wallAddEdit.WallHeightMin);
+
+                decimal area1 = (decWallLengthMax * decWallHeightMin);
+                decimal area2 = (decWallLengthMin * (decWallHeightMax - decWallHeightMin));
+                decimal area3 = decimal.Round((((decWallLengthMax - decWallLengthMin) * (decWallHeightMax - decWallHeightMin)) / 2), 3, MidpointRounding.AwayFromZero);
+
+                wallAddEdit.WallSqM = decimal.Round(((area1 + area2 + area3) / 1000000), 3, MidpointRounding.AwayFromZero);
+
+                break;
+        }
+    }
     #endregion
 
 }
