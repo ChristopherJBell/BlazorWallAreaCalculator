@@ -32,7 +32,7 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
@@ -48,6 +48,22 @@ namespace BlazorWallAreaCalculator.Data
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
                 deductions = await conn.QueryAsync<Deduction>(sqlCommand);
+            }
+            return deductions;
+        }
+
+        public async Task<IEnumerable<Deduction>> DeductionsReadByWall(int WallID)
+        {
+            IEnumerable<Deduction> deductions;
+            var parameters = new DynamicParameters();
+            parameters.Add("WallID", WallID, DbType.Int32);
+
+            sqlCommand = "Select * from Deduction ";
+            sqlCommand += "WHERE WallID  = @WallID";
+
+            using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
+            {
+                deductions = await conn.QueryAsync<Deduction>(sqlCommand, parameters);
             }
             return deductions;
         }
@@ -103,7 +119,7 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
@@ -122,11 +138,9 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
-
-
     }
 }

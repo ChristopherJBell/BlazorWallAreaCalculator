@@ -370,3 +370,4 @@ wwwroot/appsettings.Development.json
 appsettings.json
 appsettings.Development.json
 data/WallAreaCalc.db
+/BlazorWallAreaCalculator/Data/WallAreaCalc.db

@@ -150,10 +150,44 @@ namespace BlazorWallAreaCalculator.Data
 
             using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
             {
-                await conn.ExecuteAsync(sqlCommand, parameters);                
+                await conn.ExecuteAsync(sqlCommand, parameters);
             }
             return true;
         }
 
+        //WallUpdateArea
+        public async Task<bool> WallUpdateArea(int WallID, decimal WallSqM)
+        {
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@WallID", WallID, DbType.Int32);
+            parameters.Add("@WallSqM", WallSqM, DbType.Decimal);
+
+            sqlCommand = "Update Wall ";
+            sqlCommand += "SET WallSqM = @WallSqM ";
+            sqlCommand += "WHERE WallID  = @WallID";
+
+            using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
+            {
+                await conn.ExecuteAsync(sqlCommand, parameters);
+            }
+            return true;
+        }
+
+        public async Task<Wall> WallReadOne(Int32 @WallID)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@WallID", WallID, DbType.Int32);
+
+            sqlCommand = "Select * from Wall ";
+            sqlCommand += "WHERE WallID  = @WallID";
+
+            using IDbConnection conn = new SQLiteConnection(_configuration.GetConnectionString(connectionId));
+            {
+                wall = await conn.QueryFirstOrDefaultAsync<Wall>(sqlCommand, parameters);
+            }
+            return wall;
+        }
     }
 }
+

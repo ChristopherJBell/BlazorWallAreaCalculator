@@ -3,6 +3,7 @@
 @inject IProjectService ProjectService
 @inject IRoomService RoomService
 @inject IWallService WallService
+@inject IDeductionService DeductionService
 @inject SfDialogService DialogService
 
 <PageTitle>Wall Area Calculator</PageTitle>
@@ -45,7 +46,7 @@
         DataSource="@walls"
         AllowSorting="true"
         AllowResizing="true"
-        Height="70"
+        Height="150"
         Toolbar="@WallToolbaritems">
     <GridColumns>
         <GridColumn Field="@nameof(Wall.WallName)"
@@ -81,6 +82,43 @@
 </SfGrid>
 
 <hr />
+<h6><b>Deductions</b></h6>
+
+<SfGrid ID="DeductionGrid"
+        DataSource="@deductions"
+        AllowSorting="true"
+        AllowResizing="true"
+        Height="125"
+        Toolbar="@DeductionToolbaritems">
+    <GridColumns>
+        <GridColumn Field="@nameof(Deduction.DeductionName)"
+                    HeaderText="Description"
+                    TextAlign="@TextAlign.Left"
+                    Width="50">
+        </GridColumn>
+        <GridColumn Field="@nameof(Deduction.SqM)"
+                    HeaderText="Area SqM"
+                    TextAlign="@TextAlign.Right"
+                    Format="n3"
+                    Width="20">
+            <Template>
+                @{
+                    var value = (context as Deduction);
+
+                    decDeductionWidth = Convert.ToDecimal(value.DeductionWidth);
+                    decDeductionHeight = Convert.ToDecimal(value.DeductionHeight);
+                    decimal SqM = decimal.Round(((decDeductionWidth * decDeductionHeight) / 1000000), 3, MidpointRounding.AwayFromZero);
+                    string SqMString = SqM.ToString("F3");
+                    <div>@SqMString</div>
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+
+    <GridEvents OnToolbarClick="DeductionToolbarClickHandler"
+                TValue="Deduction" RowSelected="DeductionRowSelectHandler">
+    </GridEvents>
+</SfGrid>
 
 <SfDialog @ref="DialogRoom" IsModal="true" Width="420px" ShowCloseIcon="false" Visible="false" AllowDragging="true">
     <DialogTemplates>
@@ -90,7 +128,7 @@
                 <div>
                     <SfTextBox Enabled="true" Placeholder="Room Name"
                                FloatLabelType="@FloatLabelType.Always"
-                    @bind-Value="roomAddEdit.RoomName">
+                               @bind-Value="roomAddEdit.RoomName">
                     </SfTextBox>
                 </div>
                 <br /><br />
@@ -113,21 +151,186 @@
                 <div>
                     <SfTextBox Enabled="true" Placeholder="Wall Name"
                                FloatLabelType="@FloatLabelType.Always"
-                    @bind-Value="wallAddEdit.WallName">
+                               @bind-Value="wallAddEdit.WallName">
                     </SfTextBox>
 
                     <div>
                         <br />
                     </div>
 
-                    <SfNumericTextBox Enabled="true"
-                                      Placeholder="Wall Area (SqM)"
-                                      Format="n2"
-                                      FloatLabelType="@FloatLabelType.Always"
-                    @bind-Value="wallAddEdit.WallSqM"
-                                      ShowSpinButton=false
-                                      CssClass="e-style">
-                    </SfNumericTextBox>
+                    <hr />
+                    @if (IsAdd)
+                    {
+                        <SfDropDownList TItem="WallType"
+                                        TValue="string"
+                                        FloatLabelType="@FloatLabelType.Always"
+                                        DataSource="@LocalData"
+                                        Placeholder="Select a Wall Type"
+                                        PopupHeight="200px"
+                                        PopupWidth="250px">
+                            <DropDownListFieldSettings Text="WallTypeName" Value="WallTypeID"></DropDownListFieldSettings>
+                            <DropDownListEvents TItem="WallType" TValue="string" ValueChange="@OnChangeWallType"></DropDownListEvents>
+                        </SfDropDownList>
+                    }
+                    else
+                    {
+                        <SfTextBox Enabled="false" Placeholder="Wall Type"
+                                   FloatLabelType="@FloatLabelType.Always"
+                                   @bind-Value="wallAddEdit.WallTypeName">
+                        </SfTextBox>
+                    }
+
+                    @switch (wallAddEdit.WallTypeName)
+                    {
+                        case "Simple":
+                            <div>
+                                <br />
+                                <img src=".\\media\\simple.jpg" />
+                                <br />
+                            </div>
+
+                            <div class="grid-container">
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+                            </div>
+
+
+                            break;
+
+                        case "Complex - Left":
+                            <div>
+                                <br />
+                                <img src=".\\media\\complex-left.jpg" />
+                                <br />
+                            </div>
+                            <div class="grid-container">
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                            </div>
+
+
+                            break;
+
+                        case "Complex - Right":
+                            <div>
+                                <br />
+                                <img src=".\\media\\complex-right.jpg" />
+                                <br />
+                            </div>
+
+                            <div class="grid-container">
+                                <div class="grid-child left-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Length (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallLengthMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                                <div class="grid-child right-column">
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Max Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMax"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+
+                                    <SfNumericTextBox Enabled="true"
+                                                      Placeholder="Min Wall Height (mm)"
+                                                      Format="n0"
+                                                      FloatLabelType="@FloatLabelType.Always"
+                                                      Width="50"
+                                                      @bind-Value="wallAddEdit.WallHeightMin"
+                                                      ShowSpinButton=false
+                                                      CssClass="e-style">
+                                    </SfNumericTextBox>
+                                </div>
+
+                            </div>
+
+
+                            break;
+                    }
+
+
+
                 </div>
                 <br /><br />
                 <div class="e-footer-content">
@@ -141,6 +344,54 @@
     </DialogTemplates>
 </SfDialog>
 
+<SfDialog @ref="DialogDeduction" IsModal="true" Width="420px" ShowCloseIcon="false" Visible="false" AllowDragging="true">
+    <DialogTemplates>
+        <Header> @dialogTitle</Header>
+        <Content>
+            <EditForm Model="@deductionAddEdit" OnValidSubmit="@DeductionSave">
+                <div>
+                    <SfTextBox Enabled="true" Placeholder="Description"
+                               FloatLabelType="@FloatLabelType.Always"
+                               @bind-Value="deductionAddEdit.DeductionName">
+                    </SfTextBox>
+
+                    <div class="grid-container">
+                        <div class="grid-child left-column">
+                            <SfNumericTextBox Enabled="true"
+                                              Placeholder="Width (mm)"
+                                              Format="n0"
+                                              FloatLabelType="@FloatLabelType.Always"
+                                              @bind-Value="deductionAddEdit.DeductionWidth"
+                                              ShowSpinButton=false
+                                              CssClass="e-style">
+                            </SfNumericTextBox>
+                        </div>
+                        <div class="grid-child right-column">
+                            <SfNumericTextBox Enabled="true"
+                                              Placeholder="Height (mm)"
+                                              Format="n0"
+                                              FloatLabelType="@FloatLabelType.Always"
+                                              @bind-Value="deductionAddEdit.DeductionHeight"
+                                              ShowSpinButton=false
+                                              CssClass="e-style">
+                            </SfNumericTextBox>
+                        </div>
+                    </div>
+                </div>
+                <br /><br />
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                        <button type="button" class="e-btn e-normal" @onclick="@CancelDeduction">Cancel</button>
+                    </div>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+
+
 <style>
     .control_wrapper {
         width: 250px;
@@ -150,12 +401,21 @@
         text-align: right;
         padding: 0px 5px 0px 0px;
     }
+
+    .grid-container {
+        display: grid;
+        max-width: 400px; /* Maximum width of the whole container - in this case both columns */
+        grid-template-columns: 1fr 1fr; /* Relative width of each column (1fr 1fr is equivalent to, say, 33fr 33fr */
+        grid-gap: 100px; /* size of the gap between columns */
+    }
+
 </style>
 
-@code{
+@code {
     public IEnumerable<Project>? projects;
     public IEnumerable<Room>? rooms;
     public IEnumerable<Wall>? walls;
+    public IEnumerable<Deduction>? deductions;
 
     [Parameter]
     public int SelectedProjectID { get; set; } = 0;
@@ -164,6 +424,11 @@
     public int SelectedWallID { get; set; } = 0;
     public string SelectedWallName { get; set; } = string.Empty;
     public decimal SelectedWallSqM { get; set; } = decimal.Zero;
+
+    public int SelectedDeductionID { get; set; } = 0;
+    public string SelectedDeductionName { get; set; } = string.Empty;
+    public int SelectedDeductionWidth { get; set; } = 0;
+    public int SelectedDeductionHeight { get; set; } = 0;
 
     SfGrid<Room>? RoomGrid;
     SfGrid<Wall>? WallGrid;
@@ -174,11 +439,32 @@
     SfDialog? DialogWall;
     Wall wallAddEdit = new Wall();
 
+    SfDialog? DialogDeduction;
+    Deduction deductionAddEdit = new Deduction();
+
+    public string SelectedWallTypeName { get; set; } = string.Empty;
+
+    public bool IsAdd { get; set; }
+
     public string dialogTitle = "";
     public string SelectedRoomName { get; set; } = string.Empty;
 
     private List<ItemModel> RoomToolbaritems = new List<ItemModel>();
     private List<ItemModel> WallToolbaritems = new List<ItemModel>();
+    private List<ItemModel> DeductionToolbaritems = new List<ItemModel>();
+
+    public int SelectedWallLengthMax { get; set; } = 0;
+    public int SelectedWallLengthMin { get; set; } = 0;
+    public int SelectedWallHeightMax { get; set; } = 0;
+    public int SelectedWallHeightMin { get; set; } = 0;
+
+    public decimal decWallSqM = decimal.Zero;
+    public decimal decWallLengthMax = decimal.Zero;
+    public decimal decWallLengthMin = decimal.Zero;
+    public decimal decWallHeightMax = decimal.Zero;
+    public decimal decWallHeightMin = decimal.Zero;
+    public decimal decDeductionWidth = decimal.Zero;
+    public decimal decDeductionHeight = decimal.Zero;
 
     protected override async Task OnInitializedAsync()
     {
@@ -192,7 +478,26 @@
         WallToolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a new wall", PrefixIcon = "e-add" });
         WallToolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected wall", PrefixIcon = "e-edit" });
         WallToolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected wall", PrefixIcon = "e-delete" });
+
+        DeductionToolbaritems.Add(new ItemModel() { Text = "Add", TooltipText = "Add a deduction", PrefixIcon = "e-add" });
+        DeductionToolbaritems.Add(new ItemModel() { Text = "Edit", TooltipText = "Edit selected deduction", PrefixIcon = "e-edit" });
+        DeductionToolbaritems.Add(new ItemModel() { Text = "Delete", TooltipText = "Delete selected deduction", PrefixIcon = "e-delete" });
     }
+
+    public class WallType
+    {
+        public int WallTypeID { get; set; } = 0;
+        public string WallTypeName { get; set; } = string.Empty;
+    }
+
+    List<WallType> LocalData = new List<WallType>
+    {
+        new WallType() {WallTypeID =1, WallTypeName= "Simple" },
+        new WallType() {WallTypeID =2, WallTypeName= "Complex - Left" },
+        new WallType() {WallTypeID =3, WallTypeName= "Complex - Right" },
+    };
+
+    #region Rooms
 
     public async Task RoomToolbarClickHandler(ClickEventArgs args)
     {
@@ -200,7 +505,7 @@
         {
             //Code for adding goes here
             //Check that a Project has been selected:
-            if(SelectedProjectID == 0)
+            if (SelectedProjectID == 0)
             {
                 await DialogService.AlertAsync("Please select a project.", "No Project Selected");
                 return;
@@ -251,9 +556,9 @@
                     //Refresh datagrid
                     rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
                     walls = Enumerable.Empty<Wall>();
+                    deductions = Enumerable.Empty<Deduction>();
                     SelectedRoomID = 0;
                     StateHasChanged();
-                    SelectedRoomID = 0;
                 }
             }
         }
@@ -265,14 +570,16 @@
         SelectedRoomID = args.Data.RoomID;
         SelectedRoomName = args.Data.RoomName;
         walls = await WallService.WallsReadByRoom(SelectedRoomID);
+        deductions = Enumerable.Empty<Deduction>();
     }
 
     public async Task OnChangeProject(ChangeEventArgs<string, Project> args)
     {
-        SelectedProjectID = args.ItemData.ProjectID;        
+        SelectedProjectID = args.ItemData.ProjectID;
         rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
         SelectedRoomID = 0;
         walls = Enumerable.Empty<Wall>();
+        deductions = Enumerable.Empty<Deduction>();
     }
 
     protected async Task RoomSave()
@@ -293,6 +600,7 @@
                     //Refresh datagrid
                     rooms = await RoomService.RoomsReadByProject(SelectedProjectID);
                     walls = Enumerable.Empty<Wall>();
+                    deductions = Enumerable.Empty<Deduction>();
                     SelectedRoomID = 0;
                     StateHasChanged();
                     await DialogRoom.HideAsync();
@@ -336,11 +644,10 @@
             }
             else
             {
-                //Project already exists - warn the user
+                //Room already exists - warn the user
                 await DialogService.AlertAsync("This room already exists", "Room already Exists");
                 return;
             }
-
         }
     }
 
@@ -349,7 +656,15 @@
         DialogRoom.HideAsync();
     }
 
+    #endregion
+
     #region Walls
+
+    public void OnChangeWallType(ChangeEventArgs<string, WallType> args)
+    {
+        wallAddEdit.WallTypeID = args.ItemData.WallTypeID;
+        wallAddEdit.WallTypeName = args.ItemData.WallTypeName;
+    }
     public async Task WallToolbarClickHandler(ClickEventArgs args)
     {
         //Check that a room has been selected
@@ -361,6 +676,10 @@
         if (args.Item.Text == "Add")
         {
             //Code for adding goes here
+            IsAdd = true;
+            SelectedWallID = 0;
+            SelectedWallTypeName = string.Empty;
+
             dialogTitle = "Add a Wall";
             wallAddEdit = new();
             await DialogWall.ShowAsync(false);
@@ -368,6 +687,7 @@
         if (args.Item.Text == "Edit")
         {
             //Code for editing
+            IsAdd = false;
             dialogTitle = "Edit a Wall";
 
             //Check that a wall has been selected
@@ -383,6 +703,12 @@
                 wallAddEdit.RoomID = SelectedRoomID;
                 wallAddEdit.WallName = SelectedWallName;
                 wallAddEdit.WallSqM = SelectedWallSqM;
+                wallAddEdit.WallTypeName = SelectedWallTypeName;                                                    //Omitted for Dynamic Dialog video
+                wallAddEdit.WallLengthMax = SelectedWallLengthMax;
+                wallAddEdit.WallLengthMin = SelectedWallLengthMin;
+                wallAddEdit.WallHeightMax = SelectedWallHeightMax;
+                wallAddEdit.WallHeightMin = SelectedWallHeightMin;
+
                 await DialogWall.ShowAsync(false);
                 StateHasChanged();
             }
@@ -406,6 +732,7 @@
                     await WallService.WallDelete(SelectedWallID);
                     //Refresh datagrid
                     walls = await WallService.WallsReadByRoom(SelectedRoomID);
+                    deductions = Enumerable.Empty<Deduction>();
                     StateHasChanged();
                     SelectedWallID = 0;
                 }
@@ -419,12 +746,21 @@
         //{args.Data} returns the current selected records.
         SelectedWallID = args.Data.WallID;
         SelectedWallName = args.Data.WallName;
-        SelectedWallSqM = args.Data.WallSqM;
+        SelectedWallTypeName = args.Data.WallTypeName;                                                              //Omitted for Dynamic Dialog video
+        SelectedWallLengthMax = args.Data.WallLengthMax;
+        SelectedWallLengthMin = args.Data.WallLengthMin;
+        SelectedWallHeightMax = args.Data.WallHeightMax;
+        SelectedWallHeightMin = args.Data.WallHeightMin;
 
+        deductions = await DeductionService.DeductionsReadByWall(SelectedWallID);
+        StateHasChanged();
     }
 
     protected async Task WallSave()
     {
+        //Run CalculateArea
+        await CalculateArea(wallAddEdit, 0);
+
         if (wallAddEdit.WallID == 0)    //It's an insert
         {
             //Check for duplicates
@@ -434,19 +770,13 @@
             {
                 wallAddEdit.RoomID = SelectedRoomID;
 
-                // Temporarily assign values to these:
-                wallAddEdit.WallTypeID = 0;
-                wallAddEdit.WallTypeName = "";
-                wallAddEdit.WallLengthMax = 0;
-                wallAddEdit.WallLengthMin = 0;
-                wallAddEdit.WallHeightMax = 0;
-                wallAddEdit.WallHeightMin = 0;
-
                 try
                 {
                     await WallService.WallCreate(wallAddEdit);
+
                     //Refresh datagrid
                     walls = await WallService.WallsReadByRoom(SelectedRoomID);
+                    deductions = Enumerable.Empty<Deduction>();
                     StateHasChanged();
                     await DialogWall.HideAsync();
                 }
@@ -474,9 +804,12 @@
             {
                 try
                 {
+                    //Upate Wall
                     await WallService.WallUpdate(wallAddEdit);
+
                     //Refresh datagrid
                     walls = await WallService.WallsReadByRoom(SelectedRoomID);
+
                     StateHasChanged();
                     await DialogWall.HideAsync();
                 }
@@ -494,6 +827,8 @@
                 return;
             }
         }
+
+        wallAddEdit = new();
     }
 
     void CancelWall()
@@ -503,4 +838,191 @@
 
     #endregion
 
+    #region Deduction
+    public async Task DeductionToolbarClickHandler(ClickEventArgs args)
+    {
+        //Check that a Wall has been selected
+        if (args.Item.Text == "Add")
+        {
+            if (SelectedWallID == 0)
+            {
+                await DialogService.AlertAsync("Please select a wall.", "No Wall Selected");
+                return;
+            }
+            else
+            {
+                //Code for adding goes here
+                dialogTitle = "Add a Deduction";
+                deductionAddEdit = new();
+                deductionAddEdit.WallID = SelectedWallID;
+                await DialogDeduction.ShowAsync(false);
+            }
+        }
+        if (args.Item.Text == "Edit")
+        {
+            //Code for editing
+            dialogTitle = "Edit a Deduction";
+
+            //Check that a wall has been selected
+            if (SelectedDeductionID == 0)
+            {
+                await DialogService.AlertAsync("Please select a deduction.", "No Deduction Selected");
+                return;
+            }
+            else
+            {
+                //populate deductionAddEdit (temporary data set used for the editing process)
+                deductionAddEdit = new();
+                deductionAddEdit.DeductionID = SelectedDeductionID;
+                deductionAddEdit.WallID = SelectedWallID;
+                deductionAddEdit.DeductionName = SelectedDeductionName;
+                deductionAddEdit.DeductionWidth = SelectedDeductionWidth;
+                deductionAddEdit.DeductionHeight = SelectedDeductionHeight;
+                await DialogDeduction.ShowAsync(false);
+                StateHasChanged();
+            }
+        }
+        if (args.Item.Text == "Delete")
+        {
+            //Code for deleting
+            if (SelectedDeductionID == 0)
+            {
+                await DialogService.AlertAsync("Please select a deduction.", "No Deduction Selected");
+                return;
+            }
+            else
+            {
+                bool isConfirm = await DialogService.ConfirmAsync(
+                    "Are you sure you want to delete " + SelectedDeductionName + "?",
+                    "Delete " + SelectedDeductionName);
+                if (isConfirm == true)
+                {
+                    await DeductionService.DeductionDelete(SelectedDeductionID);
+
+                    //Always do area calculation
+                    await CalculateArea(wallAddEdit, SelectedWallID);
+
+                    //Refresh datagrid
+                    deductions = await DeductionService.DeductionsReadByWall(SelectedWallID);
+                    walls = await WallService.WallsReadByRoom(SelectedRoomID);
+
+                    StateHasChanged();
+                    SelectedWallID = 0;
+                }
+            }
+        }
+    }
+
+    public void DeductionRowSelectHandler(RowSelectEventArgs<Deduction> args)
+    {
+        //{args.Data} returns the current selected record.
+        SelectedDeductionID = args.Data.DeductionID;
+        SelectedDeductionName = args.Data.DeductionName;
+        SelectedDeductionWidth = args.Data.DeductionWidth;
+        SelectedDeductionHeight = args.Data.DeductionHeight;
+        StateHasChanged();
+    }
+
+    protected async Task DeductionSave()
+    {
+        if (deductionAddEdit.DeductionID == 0)    //It's an insert
+        {
+            await DeductionService.DeductionCreate(deductionAddEdit);
+        }
+        else
+        {
+            await DeductionService.DeductionUpdate(deductionAddEdit);
+        }
+
+        //Always do area calculation
+        await CalculateArea(wallAddEdit, SelectedWallID);
+
+        deductions = await DeductionService.DeductionsReadByWall(SelectedWallID);
+        walls = await WallService.WallsReadByRoom(SelectedRoomID);
+        await DialogDeduction.HideAsync();
+
+        StateHasChanged();
+    }
+
+    void CancelDeduction()
+    {
+        DialogDeduction.HideAsync();
+    }
+
+    #endregion
+
+    #region Area Calculation
+    public async Task CalculateArea(Wall wallAddEdit, int SelectedWallID)
+    {
+        //If coming from WallSave, wallAddEdit will be populated.
+        //If coming from Deductions wallAddEdit will be empty (but SelectedWallID will be non-zero),
+        //so we need to populate wallAddEdit using SelectedWallID
+
+        if (SelectedWallID != 0)
+        {
+            wallAddEdit = await WallService.WallReadOne(SelectedWallID);
+        }
+
+        switch (wallAddEdit.WallTypeName)
+        {
+            case "Simple":
+
+                decWallLengthMax = Convert.ToDecimal(wallAddEdit.WallLengthMax);
+                decWallHeightMax = Convert.ToDecimal(wallAddEdit.WallHeightMax);
+
+                decimal area = decimal.Round((decWallLengthMax * decWallHeightMax) / 1000000, 3, MidpointRounding.AwayFromZero);
+
+                wallAddEdit.WallSqM = area;
+
+                break;
+
+            case "Complex - Left":
+            case "Complex - Right":
+
+                decWallLengthMax = Convert.ToDecimal(wallAddEdit.WallLengthMax);
+                decWallHeightMax = Convert.ToDecimal(wallAddEdit.WallHeightMax);
+                decWallLengthMin = Convert.ToDecimal(wallAddEdit.WallLengthMin);
+                decWallHeightMin = Convert.ToDecimal(wallAddEdit.WallHeightMin);
+
+                decimal area1 = (decWallHeightMax * decWallLengthMin);
+                decimal area2 = ((decWallLengthMax - decWallLengthMin) * decWallHeightMin);
+                decimal area3 = decimal.Round((((decWallLengthMax - decWallLengthMin) * (decWallHeightMax - decWallHeightMin)) / 2), 3, MidpointRounding.AwayFromZero);
+
+                wallAddEdit.WallSqM = decimal.Round(((area1 + area2 + area3) / 1000000), 3, MidpointRounding.AwayFromZero);
+
+                break;
+        }
+
+        //Calculate Deductions
+
+        //Always set Deductions total to 0
+        decimal wallDeductionTotal = decimal.Zero;
+
+        // If a new wall is being inserted wallAddEdit.WallID will be 0 and we can skip deductions
+        if (wallAddEdit.WallID != 0)
+        {
+            //Get deductions for this Wall
+            deductions = await DeductionService.DeductionsReadByWall(wallAddEdit.WallID);
+
+            foreach (var deductionItem in deductions)
+            {
+                decDeductionWidth = Convert.ToDecimal(deductionItem.DeductionWidth);
+                decDeductionHeight = Convert.ToDecimal(deductionItem.DeductionHeight);
+                decimal areaDeduction = decimal.Round((decDeductionWidth * decDeductionHeight), 3, MidpointRounding.AwayFromZero) / 1000000;
+
+                wallDeductionTotal = wallDeductionTotal + areaDeduction;
+            }
+
+        }
+
+        wallAddEdit.WallSqM = wallAddEdit.WallSqM - wallDeductionTotal;
+
+        if (SelectedWallID != 0)  //SelectedWall is set to 0 for WallSave
+        {
+            // Otherwise, update wall record with revised calculation
+            await WallService.WallUpdateArea(wallAddEdit.WallID, wallAddEdit.WallSqM);
+        }
+
+    }
+    #endregion
 }
